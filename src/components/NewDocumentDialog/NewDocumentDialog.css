@@ -1,0 +1,91 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** NewDocumentDialog.css
+*/
+
+.new-document-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+
+  display: grid;
+  place-items: center;
+
+  background: rgb(0 0 0 / 60%);
+}
+
+.new-document-dialog {
+  width: min(24rem, calc(100% - 2 * var(--spacing-xl)));
+  padding: var(--spacing-lg);
+
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.new-document-dialog h2 {
+  margin: 0 0 var(--spacing-lg);
+
+  font-size: var(--font-size-lg);
+}
+
+.new-document-dialog__field {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.new-document-dialog__field input {
+  width: 100%;
+  padding: var(--spacing-sm);
+
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.new-document-dialog__error {
+  margin: 0 0 var(--spacing-md);
+
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+}
+
+.new-document-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.new-document-dialog__actions button {
+  padding: var(--spacing-sm) var(--spacing-md);
+
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
+}
+
+.new-document-dialog__actions button:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.new-document-dialog__actions button[type='submit'] {
+  background: var(--color-primary);
+}
+
+.new-document-dialog__actions button[type='submit']:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.new-document-dialog__actions button:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}

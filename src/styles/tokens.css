@@ -1,0 +1,67 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** tokens.css
+*/
+
+:root {
+  /* Colors - Background */
+  --color-bg-app: #18181b;
+  --color-bg-panel: #27272a;
+  --color-bg-surface: #3f3f46;
+  --color-bg-hover: #52525b;
+
+  /* Colors - Text */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-disabled: #71717a;
+
+  /* Colors - Brand & States */
+  --color-primary: #7c3aed;
+  --color-primary-hover: #8b5cf6;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+
+  /* Borders */
+  --color-border: #3f3f46;
+  --color-border-light: #52525b;
+
+  /* Typography */
+  --font-family-primary: Inter, Arial, sans-serif;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Layout */
+  --toolbar-width: 3.5rem;
+  --sidebar-width: 16rem;
+  --menu-height: 2.5rem;
+  --statusbar-height: 1.75rem;
+
+  /* Z-index */
+  --z-canvas: 1;
+  --z-panel: 10;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+}

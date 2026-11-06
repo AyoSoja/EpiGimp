@@ -1,0 +1,73 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** ToolOptions.css
+*/
+
+.tool-options {
+  padding: var(--spacing-md);
+
+  background: var(--color-bg-panel);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-options__title {
+  margin: 0 0 var(--spacing-sm);
+
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.tool-options__content {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.tool-options__content p {
+  margin: 0;
+}
+
+.tool-options__field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.tool-options__field input[type='number'] {
+  width: 4rem;
+}
+
+.tool-options {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.tool-options__label {
+  flex-shrink: 0;
+}
+
+.tool-options button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  color: var(--color-text-primary);
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.tool-options button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.tool-options button:disabled {
+  color: var(--color-text-disabled);
+  background: var(--color-bg-surface);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}

@@ -1,0 +1,61 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** CanvasWorkspace.css
+*/
+
+.canvas-workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+
+  display: grid;
+  place-items: center;
+
+  padding: var(--spacing-xl);
+
+  background: var(--color-bg-app);
+}
+
+.canvas-workspace__document {
+  position: relative;
+  flex: 0 0 auto;
+
+  background: white;
+
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.canvas-workspace__canvas {
+  display: block;
+}
+
+.canvas-workspace__empty {
+  margin: 0;
+
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.canvas-workspace__canvas--brush,
+.canvas-workspace__canvas--eraser {
+  cursor: crosshair;
+}
+
+.canvas-workspace__canvas--color-picker {
+  cursor: copy;
+}
+
+.canvas-workspace__canvas--rectangle-select {
+  cursor: crosshair;
+}
+
+.canvas-workspace__selection {
+  position: absolute;
+
+  pointer-events: none;
+
+  border: 1px dashed var(--color-text-primary);
+  box-sizing: border-box;
+}

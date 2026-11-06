@@ -1,0 +1,52 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** StatusBar.css
+*/
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--statusbar-height);
+  padding: 0 var(--spacing-sm);
+
+  background: var(--color-bg-panel);
+  border-top: 1px solid var(--color-border);
+
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.status-bar__info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.status-bar__item {
+  white-space: nowrap;
+}
+
+.status-bar__zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.status-bar__zoom button {
+  display: grid;
+  place-items: center;
+
+  width: 1.5rem;
+  height: 1.5rem;
+
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
+}
+
+.status-bar__zoom button:hover {
+  background: var(--color-bg-hover);
+}
