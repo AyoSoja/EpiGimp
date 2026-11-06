@@ -77,31 +77,23 @@ are registered in Undo / Redo history.
 
 ## Keyboard Shortcuts
 
-Shortcut Action
-
----
-
-`Ctrl+N` New document
-`Ctrl+O` Open image
-`Ctrl+Z` Undo
-`Ctrl+Shift+Z` Redo
-`Ctrl+Shift+P` Export PNG
-`Ctrl+Shift+J` Export JPEG
+| Shortcut       | Action       |
+| -------------- | ------------ |
+| `Ctrl+N`       | New document |
+| `Ctrl+O`       | Open image   |
+| `Ctrl+Z`       | Undo         |
+| `Ctrl+Shift+Z` | Redo         |
+| `Ctrl+Shift+P` | Export PNG   |
+| `Ctrl+Shift+J` | Export JPEG  |
 
 Global shortcuts are ignored while typing in editable form fields.
 
 ## Supported Formats
 
-### Import
-
-- PNG
-- JPG
-- JPEG
-
-### Export
-
-- PNG
-- JPEG
+| Direction | Formats        |
+| --------- | -------------- |
+| Import    | PNG, JPG, JPEG |
+| Export    | PNG, JPEG      |
 
 PNG export preserves transparency. JPEG does not support transparency,
 so transparent areas are exported on a white background.
@@ -139,22 +131,38 @@ Electron Main Process
         └── Export
 ```
 
-Main source domains:
+## Project Structure
+
+```text
+EpiGimp/
+├── electron/          Main process and preload bridge
+├── src/               React renderer (see below)
+├── docs/              Installation, architecture and development guides
+├── index.html         Vite entry point
+└── package.json
+```
+
+Renderer source domains:
 
 ```text
 src/
-├── canvas/
-├── components/
-├── constants/
-├── export/
-├── filters/
-├── hooks/
-├── layers/
-├── styles/
-├── tools/
-├── types/
-└── utils/
+├── canvas/            Canvas workspace and coordinate conversion
+├── components/        Editor UI (one folder per component)
+├── constants/         Document and zoom constants
+├── document/          Raster document model, creation and image loading
+├── export/            PNG / JPEG export
+├── filters/           Image-processing algorithms
+├── hooks/             React state and behavior
+├── layers/            Layers, masks and composition
+├── styles/            Design tokens, reset and global styles
+├── tools/             Brush, eraser, color picker, selection
+├── types/             Shared type declarations (window.electronAPI)
+├── app.tsx            Root component
+└── main.tsx           React entry point
 ```
+
+All files and folders under `src/` use `kebab-case`, for example
+`components/layers-panel/layers-panel.tsx` or `hooks/use-zoom.ts`.
 
 Shared visual values are centralized in CSS design tokens. Native
 Electron/Node.js operations are kept behind the preload bridge.
@@ -248,21 +256,11 @@ project milestones.
 
 ## Documentation
 
----
-
-Document Purpose
-
----
-
-[Installation Install, run and build EpiGimp
-Guide](./docs/installation.md)
-
-[Architecture](./docs/architecture.md) Technical architecture and data
-flow
-
-[Development Coding conventions and workflow
-Guide](./docs/development.md)
-----------------------------------------------------------------------------
+| Document                                     | Purpose                           |
+| -------------------------------------------- | --------------------------------- |
+| [Installation Guide](./docs/installation.md) | Install, run and build EpiGimp    |
+| [Architecture](./docs/architecture.md)       | Technical architecture, data flow |
+| [Development Guide](./docs/development.md)   | Coding conventions and workflow   |
 
 ## Version
 

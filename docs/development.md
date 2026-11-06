@@ -80,21 +80,59 @@ src/
 ├── canvas/       Canvas workspace and rendering helpers
 ├── components/   React UI
 ├── constants/    Shared application constants
+├── document/     Raster document model, creation and image loading
 ├── export/       Export preparation/encoding
 ├── filters/      Image-processing algorithms
 ├── hooks/        React-specific reusable behavior
 ├── layers/       Layers, masks and composition
 ├── styles/       Global styling and design tokens
 ├── tools/        Editing tools
-├── types/        Shared TypeScript types
-└── utils/        Generic/shared helpers
+├── types/        Shared TypeScript declarations (e.g. window.electronAPI)
+├── app.tsx       Root component
+└── main.tsx      React entry point
 ```
 
 Code should live in the most specific relevant domain.
 
-Do not move layer-only helpers into `utils/`, for example.
+There is no catch-all `utils/` folder: a helper belongs to the domain it
+serves. For example, layer-only helpers stay in `layers/` and
+document-only helpers stay in `document/`.
 
-## 5. Functions and Modules
+### Where to put new code
+
+| You are adding...                  | Put it in                                 |
+| ---------------------------------- | ----------------------------------------- |
+| A UI component                     | `components/<component-name>/`            |
+| A new tool                         | `tools/<tool-name>/` + `tool-definitions` |
+| A new pixel filter                 | `filters/<filter-name>.ts`                |
+| A layer or mask operation          | `layers/`                                 |
+| A document-level helper            | `document/`                               |
+| React state shared across the UI   | `hooks/use-<name>.ts`                     |
+| A shared limit or default value    | `constants/editor-constants.ts`           |
+| A new native (Electron) capability | `electron/` + `types/electron.d.ts`       |
+
+## 5. File Naming
+
+All files and folders under `src/` use `kebab-case`:
+
+- a component lives in a folder of the same name, next to its
+  stylesheet: `components/layers-panel/layers-panel.tsx` and
+  `layers-panel.css`;
+- a hook is named after the hook: `useZoom` lives in
+  `hooks/use-zoom.ts`;
+- type files carry their domain in the name (`layer-types.ts`,
+  `tool-types.ts`, `filter-types.ts`) instead of a bare `types.ts`;
+- the line after `File description:` in the Epitech file header is the
+  file name.
+
+Exported identifiers keep their usual TypeScript casing: `PascalCase`
+for components and types, `camelCase` for functions and hooks.
+
+The Electron entry points `electron/main.ts` and `electron/preload.ts`
+keep their names because `package.json` and the main process reference
+the compiled files.
+
+## 6. Functions and Modules
 
 Prefer:
 
@@ -112,7 +150,7 @@ Avoid:
 - creating one file for every trivial helper without architectural
   benefit.
 
-## 6. React Components
+## 7. React Components
 
 React components should primarily handle:
 
@@ -124,9 +162,9 @@ Raster algorithms should not be embedded directly into menu or panel
 components.
 
 For example, the Filters menu triggers a filter operation, but the
-grayscale algorithm itself lives in `src/filters/`.
+grayscale algorithm itself lives in `src/filters/grayscale.ts`.
 
-## 7. Hooks
+## 8. Hooks
 
 Custom hooks are used for meaningful React behavior such as:
 
@@ -139,7 +177,7 @@ Custom hooks are used for meaningful React behavior such as:
 
 Normal non-React functions should remain normal functions.
 
-## 8. Raster Data
+## 9. Raster Data
 
 Raster pixels are represented with Canvas `ImageData`.
 
@@ -156,7 +194,7 @@ This is particularly important for:
 Do not unintentionally share mutable raster buffers between independent
 layers or history states.
 
-## 9. Layers and Masks
+## 10. Layers and Masks
 
 Editing operations should target the active layer unless the feature
 explicitly concerns the complete document.
@@ -165,13 +203,13 @@ Masks remain separate from source layer pixels.
 
 Rendering a mask must not destructively rewrite the original layer.
 
-Use the shared layer-composition path when a feature needs the final
-visible document composition.
+Use the shared layer-composition path (`layers/composite-layers.ts`)
+when a feature needs the final visible document composition.
 
-## 10. Filters
+## 11. Filters
 
-Pixel-local filters should use the shared pixel-processing engine when
-possible.
+Pixel-local filters should use the shared pixel-processing engine
+(`filters/process-pixels.ts`) when possible.
 
 A filter should:
 
@@ -184,7 +222,7 @@ A filter should:
 Algorithms that depend on neighboring pixels, such as blur, may use a
 specialized traversal while remaining inside the filters domain.
 
-## 11. Export
+## 12. Export
 
 Export must reuse the visible layer composition rather than implement a
 separate rendering model.
@@ -197,7 +235,7 @@ encoding.
 Native file saving is handled by Electron, not by direct Node.js access
 from React.
 
-## 12. Electron Communication
+## 13. Electron Communication
 
 Desktop operations follow:
 
@@ -218,14 +256,15 @@ globals to the renderer.
 
 When adding a new native capability:
 
-1.  implement the main-process handler;
-2.  expose a narrow preload method;
+1.  implement the main-process handler in `electron/main.ts`;
+2.  expose a narrow preload method in `electron/preload.ts`;
 3.  type it in `src/types/electron.d.ts`;
 4.  call that typed method from the renderer.
 
-## 13. Keyboard Shortcuts
+## 14. Keyboard Shortcuts
 
-Global keyboard behavior is centralized.
+Global keyboard behavior is centralized in
+`hooks/use-keyboard-shortcuts.ts`.
 
 Do not add unrelated `window.addEventListener('keydown', ...)` handlers
 throughout components.
@@ -233,7 +272,7 @@ throughout components.
 Shortcuts should not interfere with text inputs, textareas, selects or
 content-editable elements.
 
-## 14. Styling
+## 15. Styling
 
 Shared visual values belong in:
 
@@ -253,9 +292,10 @@ Use existing tokens for:
 Avoid duplicating hard-coded visual values when an appropriate token
 already exists.
 
-Component-specific styling stays beside the component.
+Component-specific styling stays beside the component, in the same
+folder.
 
-## 15. TypeScript
+## 16. TypeScript
 
 Reuse shared types rather than redefining the same structures.
 
@@ -265,7 +305,7 @@ documents and layers.
 Keep local-only types inside their module when they are not shared
 elsewhere.
 
-## 16. Prettier
+## 17. Prettier
 
 Current conventions include:
 
@@ -279,7 +319,7 @@ Indentation:      2 spaces
 
 Use Prettier instead of manually formatting around these rules.
 
-## 17. Git Workflow
+## 18. Git Workflow
 
 Keep branches and commits focused on a clear task or issue.
 
@@ -290,13 +330,18 @@ feat: implement image filters and pixel processing
 feat: add PNG and JPEG export
 feat: add editor keyboard shortcuts
 fix: preserve white background in JPEG export
+refactor: rename files to kebab-case and group document helpers
 docs: update documentation for v1.0
 ```
+
+When renaming or moving files, use `git mv` and keep the change in its
+own commit, separate from behavior changes, so that Git keeps the file
+history.
 
 Before merging a stable release, ensure the complete validation sequence
 passes.
 
-## 18. Release Checklist
+## 19. Release Checklist
 
 For v1.0:
 
@@ -316,7 +361,7 @@ For v1.0:
 [ ] v1.0.0 tag created
 ```
 
-## 19. Core Rules
+## 20. Core Rules
 
 1.  Keep functions small and explicit.
 2.  Keep responsibilities separated.
@@ -325,6 +370,7 @@ For v1.0:
 5.  Deep-copy mutable raster data when independence matters.
 6.  Keep UI and image algorithms separate.
 7.  Prefer existing tokens/constants to magic values.
-8.  Keep code understandable for another developer.
-9.  Validate runtime behavior, not only compilation.
-10. Update documentation when the architecture changes.
+8.  Name files in `kebab-case` and keep each domain in its own folder.
+9.  Keep code understandable for another developer.
+10. Validate runtime behavior, not only compilation.
+11. Update documentation when the architecture changes.

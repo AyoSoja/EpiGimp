@@ -67,10 +67,10 @@ electron/
 - create the main `BrowserWindow`;
 - load the Vite renderer in development;
 - load `dist/index.html` in production;
-- open the native image selection dialog;
-- read imported image files;
-- open the native Save dialog;
-- write exported PNG/JPEG bytes;
+- open the native image selection dialog (`dialog:openImage`);
+- read imported image files (`file:readImage`);
+- open the native Save dialog and write exported PNG/JPEG bytes
+  (`file:saveImage`);
 - manage the Electron application lifecycle.
 
 Security configuration includes:
@@ -102,50 +102,117 @@ Electron / Node.js
 
 This is used for native image opening and export saving.
 
+`main.ts` and `preload.ts` keep their names because `package.json` and
+the main process reference the compiled `main.js` and `preload.js`.
+
 ## 4. Renderer Structure
 
 ```text
 src/
+├── app.tsx
+├── main.tsx
 ├── canvas/
+│   ├── canvas-workspace/
+│   │   ├── canvas-workspace.tsx
+│   │   └── canvas-workspace.css
+│   └── get-canvas-coordinates.ts
 ├── components/
+│   ├── editor-layout/
+│   ├── layers-panel/
+│   ├── menu-bar/
+│   ├── new-document-dialog/
+│   ├── status-bar/
+│   ├── tool-options/
+│   └── toolbar/
 ├── constants/
+│   └── editor-constants.ts
+├── document/
+│   ├── raster-document.ts
+│   ├── create-raster-document.ts
+│   ├── document-dimensions.ts
+│   └── load-raster-image.ts
 ├── export/
+│   └── export-image.ts
 ├── filters/
+│   ├── process-pixels.ts
+│   ├── filter-types.ts
+│   ├── grayscale.ts
+│   ├── invert.ts
+│   ├── brightness.ts
+│   ├── contrast.ts
+│   └── blur.ts
 ├── hooks/
+│   ├── use-raster-document.ts
+│   ├── use-history.ts
+│   ├── use-zoom.ts
+│   ├── use-tool-manager.ts
+│   ├── use-brush-options.ts
+│   ├── use-eraser-options.ts
+│   ├── use-selection.ts
+│   └── use-keyboard-shortcuts.ts
 ├── layers/
+│   ├── layer-types.ts
+│   ├── create-layer.ts
+│   ├── create-layer-mask.ts
+│   ├── mask-selection.ts
+│   └── composite-layers.ts
 ├── styles/
+│   ├── tokens.css
+│   ├── reset.css
+│   └── global.css
 ├── tools/
-├── types/
-├── utils/
-├── App.tsx
-└── main.tsx
+│   ├── tool-types.ts
+│   ├── tool-definitions.ts
+│   ├── draw-stroke.ts
+│   ├── brush/
+│   │   └── brush-types.ts
+│   ├── eraser/
+│   │   └── eraser-types.ts
+│   ├── color-picker/
+│   │   └── pick-canvas-color.ts
+│   └── selection/
+│       ├── selection-types.ts
+│       └── crop-image-data.ts
+└── types/
+    └── electron.d.ts
 ```
+
+All files and folders under `src/` use `kebab-case`. A component lives in
+a folder of the same name, next to its stylesheet.
 
 ### `components/`
 
 Contains the editor UI:
 
-- editor layout;
-- menu bar;
-- toolbar;
-- tool options;
-- layers panel;
-- status bar;
-- new-document dialog.
+- `editor-layout/` --- assembles the editor and wires hooks to UI;
+- `menu-bar/` --- File, Edit, Filters and View menus (open, export, undo/redo, filters);
+- `toolbar/` --- tool selection;
+- `tool-options/` --- options of the active tool;
+- `layers-panel/` --- layer and mask controls;
+- `status-bar/` --- document dimensions and zoom;
+- `new-document-dialog/` --- new-document form.
 
 Components coordinate user interaction but domain-specific algorithms
 are kept outside the UI when possible.
 
 ### `canvas/`
 
-Contains the Canvas workspace and coordinate conversion.
+Contains the Canvas workspace (`canvas-workspace/`) and coordinate
+conversion (`get-canvas-coordinates.ts`).
 
 The HTML5 Canvas is the raster rendering surface. Display zoom changes
 the visual scale without changing the intrinsic document resolution.
 
 ### `tools/`
 
-Contains editing tools and their shared definitions.
+Contains editing tools and their shared definitions:
+
+- `tool-types.ts` --- `ToolId` and `ToolDefinition`;
+- `tool-definitions.ts` --- the list of available tools and the default
+  tool;
+- `draw-stroke.ts` --- stroke drawing used by the canvas;
+- one sub-folder per tool that needs its own types or logic
+  (`brush/`, `eraser/`, `color-picker/`, `selection/`).
 
 v1.0 tools include:
 
@@ -154,13 +221,13 @@ v1.0 tools include:
 - Color Picker
 - Rectangle Selection
 
-Crop uses the current rectangle selection.
+Crop uses the current rectangle selection (`selection/crop-image-data.ts`).
 
 ### `layers/`
 
 Contains the layer and mask domain.
 
-A layer stores:
+A layer (`layer-types.ts`) stores:
 
 - identifier;
 - name;
@@ -169,7 +236,11 @@ A layer stores:
 - opacity;
 - optional mask.
 
-`compositeLayers()` is the shared composition function. It:
+`create-layer.ts` and `create-layer-mask.ts` build layers and masks,
+and `mask-selection.ts` applies a rectangle selection to a mask.
+
+`compositeLayers()` (in `composite-layers.ts`) is the shared
+composition function. It:
 
 1.  clears the destination canvas;
 2.  ignores hidden layers;
@@ -183,12 +254,23 @@ The original layer pixels are not modified when a mask is rendered.
 This composition logic is reused by the editor and export path so
 exported images match the visible editor composition.
 
+### `document/`
+
+Contains the raster document model and its helpers:
+
+- `raster-document.ts` --- the `RasterDocument` type;
+- `create-raster-document.ts` --- creation of a new document;
+- `document-dimensions.ts` --- validation of document dimensions against
+  the limits in `constants/editor-constants.ts`;
+- `load-raster-image.ts` --- conversion of an imported image into a
+  document.
+
 ### `filters/`
 
 Contains image-processing algorithms independently from React.
 
-Pixel-local filters use a reusable processing engine that reads/writes
-`ImageData`.
+Pixel-local filters use a reusable processing engine
+(`process-pixels.ts`) that reads/writes `ImageData`.
 
 v1.0 filters:
 
@@ -206,7 +288,7 @@ Filters operate on the active layer and preserve alpha.
 
 ### `export/`
 
-Contains renderer-side image export preparation.
+Contains renderer-side image export preparation (`export-image.ts`).
 
 Export flow:
 
@@ -240,31 +322,27 @@ Contains reusable React state/behavior.
 
 The v1.0 architecture includes hooks for:
 
-- raster document state;
-- zoom;
-- active tool;
-- brush options;
-- eraser options;
-- selection;
-- Undo / Redo history;
-- keyboard shortcuts.
+- raster document state (`use-raster-document.ts`);
+- zoom (`use-zoom.ts`);
+- active tool (`use-tool-manager.ts`);
+- brush options (`use-brush-options.ts`);
+- eraser options (`use-eraser-options.ts`);
+- selection (`use-selection.ts`);
+- Undo / Redo history (`use-history.ts`);
+- keyboard shortcuts (`use-keyboard-shortcuts.ts`).
 
 History stores document snapshots and deep-copies mutable raster data,
 including layer and mask `ImageData`.
 
-### `types/`
-
-Contains shared TypeScript definitions such as `RasterDocument` and the
-typed `window.electronAPI`.
-
 ### `constants/`
 
-Contains shared application constants such as document/zoom constraints.
+Contains shared application constants (`editor-constants.ts`): default
+document size, document size limits and zoom limits.
 
-### `utils/`
+### `types/`
 
-Contains reusable helpers that do not belong to a more specific domain,
-including raster-document creation and image loading.
+Contains shared TypeScript declarations that do not belong to a specific
+domain, such as the typed `window.electronAPI` (`electron.d.ts`).
 
 ## 5. Raster Document Model
 
@@ -355,8 +433,9 @@ values.
 
 ## 10. Keyboard Shortcuts
 
-Keyboard handling is centralized in a dedicated React hook rather than
-being distributed across menu components.
+Keyboard handling is centralized in a dedicated React hook
+(`hooks/use-keyboard-shortcuts.ts`) rather than being distributed across
+menu components.
 
 v1.0 shortcuts:
 
@@ -420,8 +499,9 @@ EpiGimp follows these rules:
 4.  Keep UI separate from image-processing logic.
 5.  Keep OS access behind the preload bridge.
 6.  Keep layer/mask logic in the layer domain.
-7.  Centralize shared constants and design tokens.
-8.  Deep-copy mutable raster data when state independence is required.
-9.  Avoid unnecessary abstraction.
-10. Extend existing engines rather than redesigning them for each
+7.  Keep the document model in the document domain.
+8.  Centralize shared constants and design tokens.
+9.  Deep-copy mutable raster data when state independence is required.
+10. Avoid unnecessary abstraction.
+11. Extend existing engines rather than redesigning them for each
     feature.

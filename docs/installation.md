@@ -42,7 +42,23 @@ npm install
 Dependencies are managed from the root `package.json`. Do not manually
 modify `node_modules`.
 
-## 4. Start Development
+## 4. Project Layout
+
+```text
+EpiGimp/
+├── electron/       Electron main process and preload bridge
+├── src/            React renderer (kebab-case files, one folder per domain)
+├── docs/           Documentation
+├── index.html      Vite entry point (loads src/main.tsx)
+├── package.json
+├── dist/           Renderer build output (generated)
+└── dist-electron/  Electron build output (generated)
+```
+
+See [Architecture](./architecture.md) for the detailed `src/`
+organization.
+
+## 5. Start Development
 
 ```bash
 npm run dev
@@ -66,7 +82,7 @@ npm run dev
 Electron waits for the Vite server before loading the development
 renderer.
 
-## 5. Linux / Wayland Note
+## 6. Linux / Wayland Note
 
 The Ubuntu/Wayland development environment used for EpiGimp required
 Electron to run through X11 compatibility:
@@ -80,7 +96,7 @@ This option is already included in the Electron development script.
 This is an environment-specific workaround rather than an application
 requirement.
 
-## 6. Build
+## 7. Build
 
 Create the production build with:
 
@@ -98,7 +114,7 @@ Electron / TypeScript → dist-electron/
 A successful build verifies TypeScript compilation and production
 renderer generation.
 
-## 7. Test the Production Build
+## 8. Test the Production Build
 
 On the Linux development environment, the built application can be
 launched with:
@@ -115,7 +131,7 @@ dist/index.html
 
 directly from the filesystem.
 
-## 8. Code Quality
+## 9. Code Quality
 
 Apply formatting:
 
@@ -156,7 +172,7 @@ npm run build
 npm audit
 ```
 
-## 9. Functional Validation
+## 10. Functional Validation
 
 After starting EpiGimp, validate the complete editing workflow:
 
@@ -180,29 +196,19 @@ For export validation, test:
 - masks;
 - unchanged document dimensions.
 
-## 10. Supported Formats
+## 11. Supported Formats
 
-Import:
-
-```text
-PNG
-JPG
-JPEG
-```
-
-Export:
-
-```text
-PNG
-JPEG
-```
+| Direction | Formats        |
+| --------- | -------------- |
+| Import    | PNG, JPG, JPEG |
+| Export    | PNG, JPEG      |
 
 PNG preserves transparency.
 
 JPEG does not support alpha transparency; EpiGimp flattens transparent
 areas onto a white background before encoding.
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 If the Electron window does not start on a Linux Wayland session, verify
 that the development command includes:
