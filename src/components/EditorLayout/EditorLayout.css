@@ -38,3 +38,16 @@
   background: var(--color-bg-panel);
   font-size: var(--font-size-sm);
 }
+
+.editor-layout__sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+
+  background: var(--color-bg-panel);
+}
+
+.editor-layout__sidebar > .layers-panel {
+  flex: 1 0 auto;
+}

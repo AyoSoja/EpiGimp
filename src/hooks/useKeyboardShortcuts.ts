@@ -14,6 +14,8 @@ interface KeyboardShortcutActions {
   onRedo: () => void
   onExportPng: () => void
   onExportJpeg: () => void
+  onSwapColors: () => void
+  onResetColors: () => void
 }
 
 function isEditableElement(target: EventTarget | null): boolean {
@@ -65,18 +67,42 @@ function runShortcut(event: KeyboardEvent, actions: KeyboardShortcutActions): bo
   return false
 }
 
+// Single-key shortcuts (no modifier), as in GIMP: X swaps, D resets the colors.
+function runToolShortcut(event: KeyboardEvent, actions: KeyboardShortcutActions): boolean {
+  const isInDialog = event.target instanceof Element && event.target.closest('[role="dialog"]')
+
+  if (event.altKey || event.shiftKey || isInDialog) {
+    return false
+  }
+
+  const key = event.key.toLowerCase()
+
+  if (key === 'x') {
+    actions.onSwapColors()
+    return true
+  }
+
+  if (key === 'd') {
+    actions.onResetColors()
+    return true
+  }
+
+  return false
+}
+
 export function useKeyboardShortcuts(actions: KeyboardShortcutActions): void {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (!(event.ctrlKey || event.metaKey)) {
-        return
-      }
-
       if (isEditableElement(event.target)) {
         return
       }
 
-      if (runShortcut(event, actions)) {
+      const hasCommandModifier = event.ctrlKey || event.metaKey
+      const handled = hasCommandModifier
+        ? runShortcut(event, actions)
+        : runToolShortcut(event, actions)
+
+      if (handled) {
         event.preventDefault()
       }
     }

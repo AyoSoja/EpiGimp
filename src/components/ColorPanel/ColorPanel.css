@@ -1,0 +1,208 @@
+/*
+** EPITECH PROJECT, 2026
+** EpiGimp
+** File description:
+** ColorPanel.css
+*/
+
+.color-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+
+  background: var(--color-bg-panel);
+  border-left: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.color-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.color-panel__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.color-panel__actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.color-panel__actions button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.color-panel__actions button:hover {
+  background: var(--color-bg-hover);
+}
+
+.color-panel__swatches {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.color-panel__swatch-stack {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--color-swatch-stack-size);
+  height: var(--color-swatch-stack-size);
+}
+
+.color-panel__swatch {
+  position: absolute;
+  width: var(--color-swatch-size);
+  height: var(--color-swatch-size);
+  padding: 0;
+
+  border: 2px solid var(--color-bg-app);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 1px var(--color-border-light);
+  cursor: pointer;
+}
+
+.color-panel__swatch--foreground {
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.color-panel__swatch--background {
+  right: 0;
+  bottom: 0;
+}
+
+.color-panel__swatch--active {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.color-panel__swatch:focus-visible {
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: 2px;
+}
+
+.color-panel__preview {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+}
+
+.color-panel__preview-label {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.color-panel__preview-swatch {
+  width: var(--color-preview-size);
+  height: var(--color-preview-size);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.color-panel__preview-value {
+  font-family: monospace;
+}
+
+.color-panel__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.color-panel__group legend {
+  padding: 0 var(--spacing-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.color-panel__channel {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 3.25rem;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.color-panel__channel-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.color-panel__slider {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--color-primary);
+}
+
+.color-panel__slider--hue {
+  height: 0.5rem;
+  appearance: none;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  border-radius: var(--radius-sm);
+}
+
+.color-panel__slider--hue::-webkit-slider-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  appearance: none;
+  background: hsl(var(--color-panel-hue) 100% 50%);
+  border: 2px solid var(--color-text-primary);
+  border-radius: 50%;
+}
+
+.color-panel__number,
+.color-panel__hex input {
+  width: 100%;
+  padding: var(--spacing-xs);
+
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+}
+
+.color-panel__hex {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.color-panel__hex input {
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.color-panel__hex input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.color-panel__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-xs);
+}

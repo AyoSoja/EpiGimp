@@ -9,12 +9,18 @@ import { useState } from 'react'
 
 import CanvasWorkspace from '../../canvas/CanvasWorkspace/CanvasWorkspace'
 import { useBrushOptions } from '../../hooks/useBrushOptions'
+import { useColors } from '../../hooks/useColors'
 import { useEraserOptions } from '../../hooks/useEraserOptions'
+import { useFillOptions } from '../../hooks/useFillOptions'
+import { useGradientOptions } from '../../hooks/useGradientOptions'
 import { useHistory } from '../../hooks/useHistory'
 import { useRasterDocument } from '../../hooks/useRasterDocument'
 import { useSelection } from '../../hooks/useSelection'
+import { useShapeOptions } from '../../hooks/useShapeOptions'
 import { useToolManager } from '../../hooks/useToolManager'
 import { useZoom } from '../../hooks/useZoom'
+import type { ToolSettings } from '../../tools/toolSettings'
+import ColorPanel from '../ColorPanel/ColorPanel'
 import LayersPanel from '../LayersPanel/LayersPanel'
 import MenuBar from '../MenuBar/MenuBar'
 import NewDocumentDialog from '../NewDocumentDialog/NewDocumentDialog'
@@ -62,8 +68,22 @@ function EditorLayout() {
 
   const { zoom, zoomIn, zoomOut } = useZoom()
   const { activeTool, selectTool } = useToolManager()
-  const { brushOptions, setBrushSize, setBrushColor } = useBrushOptions()
+  const { brushOptions, setBrushSize } = useBrushOptions()
   const { eraserOptions, setEraserSize } = useEraserOptions()
+  const { fillOptions, setFillTolerance } = useFillOptions()
+  const { gradientOptions, setGradientType } = useGradientOptions()
+  const { shapeOptions, setShapeStrokeWidth, setShapeStyle } = useShapeOptions()
+  const { colors, setColor, setForegroundColor, setBackgroundColor, swapColors, resetColors } =
+    useColors()
+
+  const toolSettings: ToolSettings = {
+    colors,
+    brush: brushOptions,
+    eraser: eraserOptions,
+    fill: fillOptions,
+    gradient: gradientOptions,
+    shape: shapeOptions,
+  }
   const { selection, setSelection, clearSelection } = useSelection()
 
   const { pushHistory, undo, redo, clearHistory, canUndo, canRedo } = useHistory()
@@ -336,6 +356,8 @@ function EditorLayout() {
     onRedo: handleRedo,
     onExportPng: handleExportPng,
     onExportJpeg: handleExportJpeg,
+    onSwapColors: swapColors,
+    onResetColors: resetColors,
   })
 
   const activeLayer = document?.layers.find((layer) => layer.id === document.activeLayerId)
@@ -365,11 +387,15 @@ function EditorLayout() {
 
       <ToolOptions
         activeTool={activeTool}
-        brushOptions={brushOptions}
-        eraserOptions={eraserOptions}
+        toolSettings={toolSettings}
         onBrushSizeChange={setBrushSize}
-        onBrushColorChange={setBrushColor}
         onEraserSizeChange={setEraserSize}
+        onFillToleranceChange={setFillTolerance}
+        onGradientTypeChange={setGradientType}
+        onShapeStrokeWidthChange={setShapeStrokeWidth}
+        onShapeStyleChange={setShapeStyle}
+        onForegroundColorChange={setForegroundColor}
+        onBackgroundColorChange={setBackgroundColor}
         hasSelection={selection !== null && selection.width > 0 && selection.height > 0}
         canMaskSelection={canMaskSelection}
         onCrop={handleCrop}
@@ -385,32 +411,41 @@ function EditorLayout() {
           document={document}
           zoom={zoom}
           activeTool={activeTool}
-          brushOptions={brushOptions}
-          eraserOptions={eraserOptions}
+          toolSettings={toolSettings}
           selection={selection}
           onImageDataChange={updateDocumentImageData}
-          onForegroundColorChange={setBrushColor}
+          onForegroundColorChange={setForegroundColor}
+          onBackgroundColorChange={setBackgroundColor}
           onSelectionChange={setSelection}
           onEditStart={handleEditStart}
         />
 
-        <LayersPanel
-          layers={document?.layers ?? []}
-          activeLayerId={document?.activeLayerId ?? null}
-          onAddLayer={handleAddLayer}
-          onDeleteLayer={handleDeleteLayer}
-          onSelectLayer={selectLayer}
-          onRenameLayer={handleRenameLayer}
-          onDuplicateLayer={handleDuplicateLayer}
-          onToggleVisibility={handleToggleLayerVisibility}
-          onOpacityChange={handleLayerOpacityChange}
-          onOpacityEditStart={handleLayerOpacityEditStart}
-          onMoveLayerUp={handleMoveLayerUp}
-          onMoveLayerDown={handleMoveLayerDown}
-          onAddMask={handleAddLayerMask}
-          onToggleMask={handleToggleLayerMask}
-          onRemoveMask={handleRemoveLayerMask}
-        />
+        <div className="editor-layout__sidebar">
+          <ColorPanel
+            colors={colors}
+            onColorChange={setColor}
+            onSwap={swapColors}
+            onReset={resetColors}
+          />
+
+          <LayersPanel
+            layers={document?.layers ?? []}
+            activeLayerId={document?.activeLayerId ?? null}
+            onAddLayer={handleAddLayer}
+            onDeleteLayer={handleDeleteLayer}
+            onSelectLayer={selectLayer}
+            onRenameLayer={handleRenameLayer}
+            onDuplicateLayer={handleDuplicateLayer}
+            onToggleVisibility={handleToggleLayerVisibility}
+            onOpacityChange={handleLayerOpacityChange}
+            onOpacityEditStart={handleLayerOpacityEditStart}
+            onMoveLayerUp={handleMoveLayerUp}
+            onMoveLayerDown={handleMoveLayerDown}
+            onAddMask={handleAddLayerMask}
+            onToggleMask={handleToggleLayerMask}
+            onRemoveMask={handleRemoveLayerMask}
+          />
+        </div>
       </div>
 
       <StatusBar

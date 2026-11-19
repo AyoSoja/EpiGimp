@@ -71,3 +71,42 @@
   border-color: var(--color-border);
   cursor: not-allowed;
 }
+
+.tool-options {
+  flex-wrap: wrap;
+  row-gap: var(--spacing-sm);
+}
+
+.tool-options select {
+  padding: var(--spacing-xs);
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.tool-options__swatch {
+  display: inline-block;
+  width: var(--color-preview-size);
+  height: var(--color-preview-size);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+
+.tool-options__swatch--empty {
+  background: repeating-conic-gradient(var(--color-bg-surface) 0% 25%, var(--color-bg-panel) 0% 50%)
+    50% / 0.5rem 0.5rem;
+}
+
+.tool-options__value {
+  min-width: 4.5rem;
+  font-family: monospace;
+}
+
+.tool-options__hint {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
