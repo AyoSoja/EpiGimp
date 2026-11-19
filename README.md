@@ -20,12 +20,29 @@ selections, layers, masks, filters and PNG/JPEG export.
 
 ### Editing tools
 
-- Brush
+- Brush (paints with the foreground color)
 - Eraser
-- Color picker
+- Color picker: click sets the foreground color, Ctrl+click the background
+  color; the color under the cursor is previewed in the tool options
+- Bucket fill: flood fill of the contiguous similar-colored area, with an
+  adjustable tolerance (0–255, maximum RGBA channel difference)
+- Gradient: linear or radial, from the foreground to the background color;
+  Shift snaps the angle to 45°
+- Line, rectangle and ellipse: outline, fill, or outline + fill, with a
+  configurable outline width (outline = foreground color, fill = background
+  color); Shift constrains to 45° lines, squares and circles
 - Rectangle selection
 - Crop from the current selection
 - Undo / Redo
+
+Bucket fill, gradients and shapes only modify the inside of the active
+rectangle selection.
+
+### Colors
+
+- Foreground / background color swatches with live preview
+- RGB, HSV and hexadecimal (`#rgb` / `#rrggbb`) editors
+- Swap foreground / background (`X`) and reset to black / white (`D`)
 
 ### Layers
 
@@ -85,6 +102,8 @@ are registered in Undo / Redo history.
 | `Ctrl+Shift+Z` | Redo         |
 | `Ctrl+Shift+P` | Export PNG   |
 | `Ctrl+Shift+J` | Export JPEG  |
+| `X`            | Swap colors  |
+| `D`            | Reset colors |
 
 Global shortcuts are ignored while typing in editable form fields.
 
@@ -207,6 +226,8 @@ See [Installation Guide](./docs/installation.md) for the complete setup.
 
 ```bash
 npm run dev
+npm test
+npm run test:e2e
 npm run format
 npm run format:check
 npm run lint
