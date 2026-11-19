@@ -7,5 +7,4 @@
 
 export interface BrushOptions {
   size: number
-  color: string
 }

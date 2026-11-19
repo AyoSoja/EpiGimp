@@ -7,14 +7,22 @@
 
 import { useEffect, useRef } from 'react'
 
+import { createImageDataCanvas, readCanvasImageData } from '../createImageDataCanvas'
+import type { ImageDataCanvas } from '../createImageDataCanvas'
 import { getCanvasCoordinates } from '../getCanvasCoordinates'
+import type { CanvasCoordinates } from '../getCanvasCoordinates'
+import { hexToRgb } from '../../colors/colorConversion'
 import { compositeLayers } from '../../layers/compositeLayers'
 import type { Layer } from '../../layers/types'
-import type { BrushOptions } from '../../tools/brush/types'
+import { applyDragTool } from '../../tools/applyDragTool'
+import { setColorSample } from '../../tools/colorPicker/colorSample'
 import { pickCanvasColor } from '../../tools/colorPicker/pickCanvasColor'
 import { drawStroke } from '../../tools/drawStroke'
-import type { EraserOptions } from '../../tools/eraser/types'
+import { floodFill } from '../../tools/fill/floodFill'
 import type { RectangleSelection } from '../../tools/selection/types'
+import { hasArea } from '../../tools/selection/selectionBounds'
+import { isDragTool } from '../../tools/toolDefinitions'
+import type { ToolSettings } from '../../tools/toolSettings'
 import type { ToolId } from '../../tools/types'
 import type { RasterDocument } from '../../types/RasterDocument'
 
@@ -24,35 +32,54 @@ interface CanvasWorkspaceProps {
   document: RasterDocument | null
   zoom: number
   activeTool: ToolId
-  brushOptions: BrushOptions
-  eraserOptions: EraserOptions
+  toolSettings: ToolSettings
   selection: RectangleSelection | null
   onImageDataChange: (imageData: ImageData) => void
   onForegroundColorChange: (color: string) => void
+  onBackgroundColorChange: (color: string) => void
   onSelectionChange: (selection: RectangleSelection | null) => void
   onEditStart: () => void
+}
+
+interface DragState {
+  start: CanvasCoordinates
+  baseImageData: ImageData
+  result: ImageData | null
+  pendingEnd: { point: CanvasCoordinates; constrain: boolean } | null
+  frameId: number | null
+}
+
+// The picker reads pixels back on every hover move: keep the display canvas CPU-readable.
+function getDisplayContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
+  return canvas.getContext('2d', { willReadFrequently: true })
 }
 
 function CanvasWorkspace({
   document,
   zoom,
   activeTool,
-  brushOptions,
-  eraserOptions,
+  toolSettings,
   selection,
   onImageDataChange,
   onForegroundColorChange,
+  onBackgroundColorChange,
   onSelectionChange,
   onEditStart,
 }: CanvasWorkspaceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const editingCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
-  const isDrawingRef = useRef(false)
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+  const strokeCanvasRef = useRef<ImageDataCanvas | null>(null)
+  const lastPointRef = useRef<CanvasCoordinates | null>(null)
 
-  const isSelectingRef = useRef(false)
-  const selectionStartRef = useRef<{ x: number; y: number } | null>(null)
+  const selectionStartRef = useRef<CanvasCoordinates | null>(null)
+
+  const dragRef = useRef<DragState | null>(null)
+
+  // Document the current stroke/drag started from: any other document change while
+  // the pointer is down (undo, redo…) invalidates the pixels being edited.
+  const interactionDocumentRef = useRef<RasterDocument | null>(null)
+
+  const activeSelection = hasArea(selection) ? selection : null
 
   const getActiveLayer = (): Layer | null => {
     if (!document) {
@@ -67,7 +94,7 @@ function CanvasWorkspace({
       return
     }
 
-    const context = canvasRef.current.getContext('2d')
+    const context = getDisplayContext(canvasRef.current)
 
     if (!context) {
       return
@@ -87,12 +114,29 @@ function CanvasWorkspace({
     compositeLayers(context, layers, document.width, document.height)
   }
 
+  const cancelPixelInteraction = (): void => {
+    const drag = dragRef.current
+
+    if (drag?.frameId != null) {
+      cancelAnimationFrame(drag.frameId)
+    }
+
+    dragRef.current = null
+    strokeCanvasRef.current = null
+    lastPointRef.current = null
+    interactionDocumentRef.current = null
+  }
+
   useEffect(() => {
+    if (interactionDocumentRef.current && interactionDocumentRef.current !== document) {
+      cancelPixelInteraction()
+    }
+
     if (!document || !canvasRef.current) {
       return
     }
 
-    const context = canvasRef.current.getContext('2d')
+    const context = getDisplayContext(canvasRef.current)
 
     if (!context) {
       return
@@ -101,197 +145,244 @@ function CanvasWorkspace({
     compositeLayers(context, document.layers, document.width, document.height)
   }, [document])
 
-  const createEditingCanvas = (layer: Layer): HTMLCanvasElement => {
-    const canvas = window.document.createElement('canvas')
+  useEffect(() => {
+    setColorSample(null)
+  }, [activeTool])
 
-    canvas.width = layer.imageData.width
-    canvas.height = layer.imageData.height
-
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-      throw new Error('Unable to create editing context')
-    }
-
-    context.putImageData(layer.imageData, 0, 0)
-
-    return canvas
+  const commitImageData = (imageData: ImageData): void => {
+    onEditStart()
+    onImageDataChange(imageData)
   }
 
-  const drawActiveStroke = (
-    context: CanvasRenderingContext2D,
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-  ): void => {
-    drawStroke(context, {
+  const drawActiveStroke = (from: CanvasCoordinates, to: CanvasCoordinates): void => {
+    if (!strokeCanvasRef.current) {
+      return
+    }
+
+    drawStroke(strokeCanvasRef.current.context, {
       from,
       to,
-      size: activeTool === 'brush' ? brushOptions.size : eraserOptions.size,
-      color: brushOptions.color,
+      size: activeTool === 'brush' ? toolSettings.brush.size : toolSettings.eraser.size,
+      color: toolSettings.colors.foreground,
       erase: activeTool === 'eraser',
     })
+
+    renderDocument(readCanvasImageData(strokeCanvasRef.current))
   }
 
   const createSelection = (
-    start: { x: number; y: number },
-    end: { x: number; y: number },
+    start: CanvasCoordinates,
+    end: CanvasCoordinates,
   ): RectangleSelection => {
-    const x = Math.min(start.x, end.x)
-    const y = Math.min(start.y, end.y)
-
     return {
-      x,
-      y,
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
       width: Math.abs(end.x - start.x),
       height: Math.abs(end.y - start.y),
     }
   }
 
-  const updateEditingPreview = (): void => {
-    const editingCanvas = editingCanvasRef.current
+  const pickColor = (event: React.PointerEvent<HTMLCanvasElement>, point: CanvasCoordinates) => {
+    const context = getDisplayContext(event.currentTarget)
+    const color = context ? pickCanvasColor(context, point) : null
 
-    if (!editingCanvas) {
+    if (!color) {
       return
     }
 
-    const context = editingCanvas.getContext('2d')
-
-    if (!context) {
-      return
+    if (event.ctrlKey || event.metaKey) {
+      onBackgroundColorChange(color)
+    } else {
+      onForegroundColorChange(color)
     }
-
-    const imageData = context.getImageData(0, 0, editingCanvas.width, editingCanvas.height)
-
-    renderDocument(imageData)
   }
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>): void => {
-    const canvas = event.currentTarget
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-      return
-    }
-
-    const point = getCanvasCoordinates(event, canvas)
-
-    if (activeTool === 'color-picker') {
-      const color = pickCanvasColor(context, point)
-
-      if (color) {
-        onForegroundColorChange(color)
-      }
-
-      return
-    }
-
-    if (activeTool === 'rectangle-select') {
-      canvas.setPointerCapture(event.pointerId)
-
-      isSelectingRef.current = true
-      selectionStartRef.current = point
-
-      onSelectionChange({
-        x: point.x,
-        y: point.y,
-        width: 0,
-        height: 0,
-      })
-
-      return
-    }
-
-    if (activeTool !== 'brush' && activeTool !== 'eraser') {
-      return
-    }
-
+  const fillAt = (point: CanvasCoordinates): void => {
     const activeLayer = getActiveLayer()
 
     if (!activeLayer) {
       return
     }
 
-    onEditStart()
+    const result = floodFill(activeLayer.imageData, {
+      x: point.x,
+      y: point.y,
+      color: hexToRgb(toolSettings.colors.foreground),
+      tolerance: toolSettings.fill.tolerance,
+      selection: activeSelection,
+    })
 
-    const editingCanvas = createEditingCanvas(activeLayer)
-    const editingContext = editingCanvas.getContext('2d')
+    if (result) {
+      commitImageData(result)
+    }
+  }
 
-    if (!editingContext) {
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>): void => {
+    const canvas = event.currentTarget
+    const point = getCanvasCoordinates(event, canvas)
+
+    if (activeTool === 'color-picker') {
+      pickColor(event, point)
       return
     }
 
-    editingCanvasRef.current = editingCanvas
+    if (activeTool === 'rectangle-select') {
+      canvas.setPointerCapture(event.pointerId)
+      selectionStartRef.current = point
+      onSelectionChange({ x: point.x, y: point.y, width: 0, height: 0 })
+      return
+    }
+
+    // Fill and drag tools only react to the primary button (no accidental right-click fill).
+    const isPrimaryButton = event.button === 0
+
+    if (activeTool === 'bucket-fill') {
+      if (isPrimaryButton) {
+        fillAt(point)
+      }
+      return
+    }
+
+    const activeLayer = getActiveLayer()
+
+    if (!activeLayer || (isDragTool(activeTool) && !isPrimaryButton)) {
+      return
+    }
 
     canvas.setPointerCapture(event.pointerId)
+    interactionDocumentRef.current = document
 
-    isDrawingRef.current = true
+    if (isDragTool(activeTool)) {
+      dragRef.current = {
+        start: point,
+        baseImageData: activeLayer.imageData,
+        result: null,
+        pendingEnd: null,
+        frameId: null,
+      }
+      return
+    }
+
+    onEditStart()
+    strokeCanvasRef.current = createImageDataCanvas(activeLayer.imageData)
     lastPointRef.current = point
-
-    drawActiveStroke(editingContext, point, point)
-    updateEditingPreview()
+    drawActiveStroke(point, point)
   }
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>): void => {
     const canvas = event.currentTarget
-
-    if (activeTool === 'rectangle-select' && isSelectingRef.current && selectionStartRef.current) {
-      const point = getCanvasCoordinates(event, canvas)
-
-      onSelectionChange(createSelection(selectionStartRef.current, point))
-
-      return
-    }
-
-    if (
-      (activeTool !== 'brush' && activeTool !== 'eraser') ||
-      !isDrawingRef.current ||
-      !lastPointRef.current ||
-      !editingCanvasRef.current
-    ) {
-      return
-    }
-
-    const editingContext = editingCanvasRef.current.getContext('2d')
-
-    if (!editingContext) {
-      return
-    }
-
     const point = getCanvasCoordinates(event, canvas)
-    const previousPoint = lastPointRef.current
 
-    drawActiveStroke(editingContext, previousPoint, point)
+    if (activeTool === 'color-picker') {
+      const context = getDisplayContext(canvas)
 
-    lastPointRef.current = point
+      setColorSample(context ? pickCanvasColor(context, point) : null)
+      return
+    }
 
-    updateEditingPreview()
+    if (selectionStartRef.current) {
+      onSelectionChange(createSelection(selectionStartRef.current, point))
+      return
+    }
+
+    const drag = dragRef.current
+
+    if (drag) {
+      drag.pendingEnd = { point, constrain: event.shiftKey }
+      drag.frameId ??= requestAnimationFrame(() => updateDragPreview(drag))
+      return
+    }
+
+    if (strokeCanvasRef.current && lastPointRef.current) {
+      drawActiveStroke(lastPointRef.current, point)
+      lastPointRef.current = point
+    }
   }
 
-  const handlePointerEnd = (): void => {
-    if (isSelectingRef.current) {
-      isSelectingRef.current = false
-      selectionStartRef.current = null
-      return
-    }
+  const finishStroke = (): void => {
+    const strokeCanvas = strokeCanvasRef.current
 
-    if (!isDrawingRef.current || !editingCanvasRef.current) {
-      return
-    }
-
-    const editingCanvas = editingCanvasRef.current
-    const context = editingCanvas.getContext('2d')
-
-    isDrawingRef.current = false
+    strokeCanvasRef.current = null
     lastPointRef.current = null
-    editingCanvasRef.current = null
+    interactionDocumentRef.current = null
 
-    if (!context) {
+    if (strokeCanvas) {
+      onImageDataChange(readCanvasImageData(strokeCanvas))
+    }
+  }
+
+  // Recomputes the drag result at most once per frame (gradients cover the whole image).
+  const updateDragPreview = (drag: DragState): void => {
+    drag.frameId = null
+
+    if (!drag.pendingEnd || !isDragTool(activeTool)) {
       return
     }
 
-    const imageData = context.getImageData(0, 0, editingCanvas.width, editingCanvas.height)
+    drag.result = applyDragTool(
+      activeTool,
+      drag.baseImageData,
+      { start: drag.start, end: drag.pendingEnd.point, constrain: drag.pendingEnd.constrain },
+      toolSettings,
+      activeSelection,
+    )
+    drag.pendingEnd = null
 
-    onImageDataChange(imageData)
+    if (dragRef.current === drag) {
+      renderDocument(drag.result ?? drag.baseImageData)
+    }
+  }
+
+  const finishDrag = (commit: boolean): void => {
+    const drag = dragRef.current
+
+    dragRef.current = null
+    interactionDocumentRef.current = null
+
+    if (!drag) {
+      return
+    }
+
+    if (drag.frameId !== null) {
+      cancelAnimationFrame(drag.frameId)
+    }
+
+    if (drag.pendingEnd) {
+      updateDragPreview(drag)
+    }
+
+    if (commit && drag.result) {
+      commitImageData(drag.result)
+    } else {
+      renderDocument()
+    }
+  }
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>): void => {
+    selectionStartRef.current = null
+
+    // Honor Shift pressed or released after the last move.
+    if (dragRef.current) {
+      dragRef.current.pendingEnd = {
+        point: getCanvasCoordinates(event, event.currentTarget),
+        constrain: event.shiftKey,
+      }
+    }
+
+    finishDrag(true)
+    finishStroke()
+  }
+
+  const handlePointerCancel = (): void => {
+    selectionStartRef.current = null
+    finishDrag(false)
+    finishStroke()
+  }
+
+  const handlePointerLeave = (): void => {
+    if (activeTool === 'color-picker') {
+      setColorSample(null)
+    }
   }
 
   const zoomScale = zoom / 100
@@ -317,18 +408,19 @@ function CanvasWorkspace({
             }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerEnd}
-            onPointerCancel={handlePointerEnd}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={handlePointerLeave}
           />
 
-          {selection && selection.width > 0 && selection.height > 0 && (
+          {activeSelection && (
             <div
               className="canvas-workspace__selection"
               style={{
-                left: `${selection.x * zoomScale}px`,
-                top: `${selection.y * zoomScale}px`,
-                width: `${selection.width * zoomScale}px`,
-                height: `${selection.height * zoomScale}px`,
+                left: `${activeSelection.x * zoomScale}px`,
+                top: `${activeSelection.y * zoomScale}px`,
+                width: `${activeSelection.width * zoomScale}px`,
+                height: `${activeSelection.height * zoomScale}px`,
               }}
             />
           )}

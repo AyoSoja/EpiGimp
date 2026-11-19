@@ -6,7 +6,9 @@
  */
 
 import type { CanvasCoordinates } from '../../canvas/getCanvasCoordinates'
+import { rgbToHex } from '../../colors/colorConversion'
 
+// Displayed color under the point, or null on a transparent pixel or outside the canvas.
 export function pickCanvasColor(
   context: CanvasRenderingContext2D,
   point: CanvasCoordinates,
@@ -14,20 +16,27 @@ export function pickCanvasColor(
   const x = Math.floor(point.x)
   const y = Math.floor(point.y)
 
-  const pixel = context.getImageData(x, y, 1, 1).data
-  const alpha = pixel[3]
+  if (x < 0 || y < 0 || x >= context.canvas.width || y >= context.canvas.height) {
+    return null
+  }
+
+  return getDisplayedColor(context.getImageData(x, y, 1, 1).data)
+}
+
+// Color the user actually sees: the composite pixel over the white document
+// background (the same background JPEG export flattens onto). Null if transparent.
+export function getDisplayedColor(pixel: ArrayLike<number>): string | null {
+  const alpha = pixel[3] / 255
 
   if (alpha === 0) {
     return null
   }
 
-  return rgbToHex(pixel[0], pixel[1], pixel[2])
-}
+  const overWhite = (channel: number): number => channel * alpha + 255 * (1 - alpha)
 
-function rgbToHex(red: number, green: number, blue: number): string {
-  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`
-}
-
-function toHex(value: number): string {
-  return value.toString(16).padStart(2, '0')
+  return rgbToHex({
+    red: overWhite(pixel[0]),
+    green: overWhite(pixel[1]),
+    blue: overWhite(pixel[2]),
+  })
 }

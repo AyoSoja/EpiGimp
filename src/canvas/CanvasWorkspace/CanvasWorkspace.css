@@ -47,6 +47,14 @@
   cursor: copy;
 }
 
+.canvas-workspace__canvas--bucket-fill {
+  cursor: cell;
+}
+
+.canvas-workspace__canvas--gradient,
+.canvas-workspace__canvas--line,
+.canvas-workspace__canvas--rectangle,
+.canvas-workspace__canvas--ellipse,
 .canvas-workspace__canvas--rectangle-select {
   cursor: crosshair;
 }

@@ -54,7 +54,10 @@
   --radius-lg: 0.75rem;
 
   /* Layout */
-  --toolbar-width: 3.5rem;
+  --toolbar-width: 4.5rem;
+  --color-swatch-size: 2.25rem;
+  --color-swatch-stack-size: 3.5rem;
+  --color-preview-size: 1.75rem;
   --sidebar-width: 16rem;
   --menu-height: 2.5rem;
   --statusbar-height: 1.75rem;
